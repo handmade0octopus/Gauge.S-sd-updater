@@ -1,33 +1,17 @@
 #include <Arduino.h>
 #include <Update.h>
+#include "config.h"
 
-#define PCB_VER 40                  // versions older than v4.0 (40) use SPI for SD card
-#define UPDATE_FILE "/update.bin"   // Default file on SD card to update from
-
-#if PCB_VER < 40
-	#include <SD.h>
-	#define SD_USE SD
-
-	#define SD_CS 15
-	#define SD_CS 15
-	#define SD_SCK 14
-	#define SD_MISO 27
-	#define SD_MOSI 13
-	SPIClass SDSPI(HSPI);
-
-#elif PCB_VER >= 40
-	#include <SD_MMC.h>
-	#define SD_USE SD_MMC
-
-	#define ENC_D			27
-	#define ENC_E			13
-
+#if PCB_VER >= 50
+HWCDC Serial;
 #endif
+
+#define UPDATE_FILE "/update.bin"   // Default file on SD card to update from
 
 // Update function
 void updateFirmware() {	
 	File updateFile = SD_USE.open(UPDATE_FILE);
-	if (updateFile == NULL || updateFile.isDirectory()) {
+	if(!updateFile || updateFile.isDirectory()) {
 		return;
 	}
 	size_t updateSize = updateFile.size();
@@ -52,27 +36,34 @@ void updateFirmware() {
 
 
 void setup() {
-  Serial.begin(115200);
+	Serial.begin(115200);
 
-  // Setup SD card
-  bool sdReady = false;
-  #if PCB_VER >= 40
-		sdReady = SD_USE.begin("/sdcard", true);
+	// Setup SD card
+	bool sdReady = false;
+	#if PCB_VER >= 40
+		 #if PCB_VER >= 50
+			SD_USE.setPins(SD_SCK, SD_MISO, SD_MOSI, -1, -1, -1);
+			sdReady = SD_USE.begin("/sdcard", true, false, SDMMC_FREQ_HIGHSPEED, 10);
+			delay(2000);
+		 #else
+			sdReady = SD_USE.begin("/sdcard", true, false, SDMMC_FREQ_HIGHSPEED, 5);
+		 #endif
 	#else
 		SDSPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
 		sdReady = SD_USE.begin(SD_CS, SDSPI, 80000000, "/sd", 7);
 	#endif
 
-  // Update firmware if file found
-  if(sdReady) updateFirmware();
-  else Serial.println("SD ERROR!");
+	// Update firmware if file found
+	if(sdReady) updateFirmware();
+	else Serial.println("SD ERROR!");
 
-  Serial.println("UPDATE ERROR!");
+	Serial.println("UPDATE ERROR!");
 
-  delay(5000);
-  ESP.restart();
+	delay(20000);
+	ESP.restart();
 }
 
 void loop() {
+	delay(5000);
 }
 

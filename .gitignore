@@ -5,3 +5,4 @@
 .vscode/ipch
 /my-config/*
 /.history/*
+/src/tests.hpp
