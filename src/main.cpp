@@ -2,9 +2,6 @@
 #include <Update.h>
 #include "config.h"
 
-#if PCB_VER >= 50
-HWCDC Serial;
-#endif
 
 #define UPDATE_FILE "/update.bin"   // Default file on SD card to update from
 
@@ -37,7 +34,7 @@ void updateFirmware() {
 
 void setup() {
 	Serial.begin(115200);
-
+	log_i("Starting firmware update...");
 	// Setup SD card
 	bool sdReady = false;
 	#if PCB_VER >= 40
